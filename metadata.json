@@ -1,0 +1,5 @@
+{
+  "name": "Spice AI",
+  "description": "Spice AI is an intelligent calorie tracking app with a sleek, modern design. It understands natural language meal descriptions, with a focus on Indian cuisine, and provides detailed nutritional breakdowns, daily summaries, and personalized dietary recommendations powered by Gemini.",
+  "requestFramePermissions": []
+}
