@@ -1,23 +1,18 @@
 import React from 'react';
 import { UserGoal } from '../types';
+import { USER_GOALS } from '../constants';
 
 interface GoalSelectorProps {
   selectedGoal: UserGoal;
   onGoalChange: (goal: UserGoal) => void;
 }
 
-const goals: { id: UserGoal; label: string; icon: string; }[] = [
-  { id: 'Weight Loss', label: 'Weight Loss', icon: 'fa-solid fa-person-running' },
-  { id: 'Muscle Gain', label: 'Muscle Gain', icon: 'fa-solid fa-dumbbell' },
-  { id: 'Balanced Diet', label: 'Balanced Diet', icon: 'fa-solid fa-scale-balanced' },
-];
-
 const GoalSelector: React.FC<GoalSelectorProps> = ({ selectedGoal, onGoalChange }) => {
   return (
     <div className="my-8">
       <h3 className="text-lg font-semibold text-gray-600 mb-3 text-center">What's Your Goal?</h3>
       <div className="grid grid-cols-3 gap-3 bg-gray-100 p-1.5 rounded-xl">
-        {goals.map((goal) => (
+        {USER_GOALS.map((goal) => (
           <button
             key={goal.id}
             onClick={() => onGoalChange(goal.id)}

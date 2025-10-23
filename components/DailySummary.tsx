@@ -1,5 +1,6 @@
 import React from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import { PIE_CHART_COLORS } from '../constants';
 
 interface DailySummaryProps {
   totals: {
@@ -9,12 +10,6 @@ interface DailySummaryProps {
     fat: number;
   };
 }
-
-const COLORS = {
-  protein: '#6366f1', // indigo-500
-  carbs: '#fbbf24',   // amber-400
-  fat: '#94a3b8',      // slate-400
-};
 
 const DailySummary: React.FC<DailySummaryProps> = ({ totals }) => {
   const { calories, protein, carbs, fat } = totals;
@@ -47,9 +42,9 @@ const DailySummary: React.FC<DailySummaryProps> = ({ totals }) => {
                 dataKey="value"
                 nameKey="name"
               >
-                <Cell key="protein" fill={COLORS.protein} />
-                <Cell key="carbs" fill={COLORS.carbs} />
-                <Cell key="fat" fill={COLORS.fat} />
+                <Cell key="protein" fill={PIE_CHART_COLORS.protein} />
+                <Cell key="carbs" fill={PIE_CHART_COLORS.carbs} />
+                <Cell key="fat" fill={PIE_CHART_COLORS.fat} />
               </Pie>
               <Tooltip formatter={(value) => `${value}g`} />
               <Legend iconSize={10} />

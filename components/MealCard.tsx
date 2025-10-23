@@ -1,17 +1,10 @@
 import React from 'react';
-import { Meal, MealType } from '../types';
+import { Meal } from '../types';
+import { MEAL_ICONS } from '../constants';
 
 interface MealCardProps {
   meal: Meal;
 }
-
-const mealIcons: Record<MealType, string> = {
-    Breakfast: 'fa-solid fa-mug-saucer',
-    Lunch: 'fa-solid fa-plate-wheat',
-    Dinner: 'fa-solid fa-utensils',
-    Snack: 'fa-solid fa-apple-whole',
-};
-
 
 const MealCard: React.FC<MealCardProps> = ({ meal }) => {
   return (
@@ -20,7 +13,7 @@ const MealCard: React.FC<MealCardProps> = ({ meal }) => {
         <div className="flex justify-between items-start mb-4">
           <div>
             <div className="flex items-center text-gray-500 text-sm">
-                <i className={`${mealIcons[meal.type]} mr-2`}></i>
+                <i className={`${MEAL_ICONS[meal.type]} mr-2`}></i>
                 <h3 className="font-bold text-lg text-gray-800">{meal.type}</h3>
             </div>
             <p className="text-gray-600 mt-1 italic">"{meal.description}"</p>

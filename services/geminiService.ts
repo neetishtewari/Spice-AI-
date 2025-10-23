@@ -7,6 +7,8 @@ if (!process.env.API_KEY) {
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
+// --- Schemas for structured responses ---
+
 const mealAnalysisSchema = {
   type: Type.OBJECT,
   properties: {
@@ -49,12 +51,46 @@ const mealSuggestionSchema = {
     required: ['mealName', 'reason', 'estimatedCalories', 'estimatedProtein']
 }
 
+// --- Prompt Templates for Maintainability ---
+
+const ANALYZE_MEAL_PROMPT = (description: string) => `
+You are an expert nutritionist with deep knowledge of a wide variety of regional Indian cuisines (e.g., North Indian like Paneer Butter Masala, South Indian like Dosa, Eastern like Litti Chokha, Western like Dhokla), common street foods (e.g., Pani Puri, Vada Pav), and traditional snacks.
+Analyze the following meal description: "${description}".
+Break down the meal into individual food items. For each item, estimate the quantity, calories, protein (in grams), carbohydrates (in grams), and fat (in grams).
+Provide a brief one-sentence summary of the meal's nutritional profile.
+Respond ONLY with a valid JSON object that adheres to the provided schema. Do not include any text, explanation, or markdown formatting outside of the JSON object.
+`;
+
+const GET_RECOMMENDATIONS_PROMPT = (mealsLog: string) => `
+You are a helpful and encouraging nutritionist. Based on the following JSON log of meals consumed today, provide 3-4 concise, actionable, and positive recommendations for improving the user's diet.
+Frame the advice in a friendly tone. Do not repeat the daily totals. Focus on what they can do next.
+
+Today's Meal Log:
+${mealsLog}
+
+Your Recommendations (as a single block of plain text, with each recommendation on a new line):
+`;
+
+const GET_MEAL_SUGGESTION_PROMPT = (mealsLog: string, dailyTotals: {calories: number, protein: number}, goal: UserGoal) => `
+You are an expert nutritionist AI. The user's goal is "${goal}".
+Based on their meal log so far today, suggest a specific, healthy Indian dish or meal combination for their *next* meal.
+Keep the suggestion relevant to their goal (e.g., low-calorie for weight loss, high-protein for muscle gain).
+
+User's Goal: ${goal}
+Today's Meals Log: ${mealsLog}
+Today's Totals: ${Math.round(dailyTotals.calories)} kcal, ${Math.round(dailyTotals.protein)}g protein.
+
+Your task is to provide a single meal suggestion as a JSON object. The reason should be concise and encouraging.
+Respond ONLY with a valid JSON object that adheres to the provided schema. Do not include any other text.
+`;
+
+
+// --- Service Functions ---
+
 export async function analyzeMeal(description: string): Promise<MealAnalysis> {
-  const prompt = `You are an expert nutritionist with deep knowledge of a wide variety of regional Indian cuisines (e.g., North Indian like Paneer Butter Masala, South Indian like Dosa, Eastern like Litti Chokha, Western like Dhokla), common street foods (e.g., Pani Puri, Vada Pav), and traditional snacks. Analyze the following meal description: "${description}". Break down the meal into individual food items. For each item, estimate the quantity, calories, protein (in grams), carbohydrates (in grams), and fat (in grams). Provide a brief one-sentence summary of the meal's healthiness. Respond ONLY with a valid JSON object that adheres to the provided schema. Do not include any text, explanation, or markdown formatting outside of the JSON object.`;
-  
   const response = await ai.models.generateContent({
     model: 'gemini-2.5-flash',
-    contents: prompt,
+    contents: ANALYZE_MEAL_PROMPT(description),
     config: {
       responseMimeType: 'application/json',
       responseSchema: mealAnalysisSchema,
@@ -64,43 +100,28 @@ export async function analyzeMeal(description: string): Promise<MealAnalysis> {
   const jsonText = response.text.trim();
   try {
     return JSON.parse(jsonText) as MealAnalysis;
-  } catch (e) {
-    console.error("Failed to parse Gemini JSON response for meal analysis:", jsonText);
+  } catch (e: any) {
+    console.error("Failed to parse Gemini JSON response for meal analysis:", {
+      responseText: jsonText,
+      error: e.message,
+    });
     throw new Error("Received an invalid format from the AI.");
   }
 }
 
 export async function getRecommendations(mealsLog: string): Promise<string> {
-  const prompt = `You are a helpful and encouraging nutritionist. Based on the following JSON log of meals consumed today, provide 3-4 concise, actionable, and positive recommendations for improving the user's diet. The user's goal is general health and wellness. Frame the advice in a friendly tone. Do not repeat the daily totals. Focus on what they can do next.
-
-  Today's Meal Log:
-  ${mealsLog}
-  
-  Your Recommendations (as a single block of text):`;
-
   const response = await ai.models.generateContent({
     model: 'gemini-2.5-flash',
-    contents: prompt,
+    contents: GET_RECOMMENDATIONS_PROMPT(mealsLog),
   });
   
-  return response.text;
+  return response.text.trim();
 }
 
 export async function getMealSuggestion(mealsLog: string, dailyTotals: {calories: number, protein: number}, goal: UserGoal): Promise<MealSuggestion> {
-    const prompt = `You are an expert nutritionist AI. The user's goal is "${goal}". 
-    Based on their meal log so far today, suggest a specific, healthy Indian dish or meal combination for their *next* meal.
-    Keep the suggestion relevant to their goal (e.g., low-calorie for weight loss, high-protein for muscle gain).
-    
-    User's Goal: ${goal}
-    Today's Meals Log: ${mealsLog}
-    Today's Totals: ${Math.round(dailyTotals.calories)} kcal, ${Math.round(dailyTotals.protein)}g protein.
-
-    Your task is to provide a single meal suggestion as a JSON object. The reason should be concise and encouraging.
-    Respond ONLY with a valid JSON object that adheres to the provided schema. Do not include any other text.`;
-
     const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
-        contents: prompt,
+        contents: GET_MEAL_SUGGESTION_PROMPT(mealsLog, dailyTotals, goal),
         config: {
             responseMimeType: 'application/json',
             responseSchema: mealSuggestionSchema,
@@ -110,8 +131,11 @@ export async function getMealSuggestion(mealsLog: string, dailyTotals: {calories
     const jsonText = response.text.trim();
     try {
         return JSON.parse(jsonText) as MealSuggestion;
-    } catch (e) {
-        console.error("Failed to parse Gemini JSON response for meal suggestion:", jsonText);
+    } catch (e: any) {
+        console.error("Failed to parse Gemini JSON response for meal suggestion:", {
+          responseText: jsonText,
+          error: e.message,
+        });
         throw new Error("Received an invalid format from the AI for the meal suggestion.");
     }
 }
